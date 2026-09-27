@@ -1,17 +1,13 @@
 """
 Titan AI - Telegram rasm generatsiya boti
 Pollinations.ai API orqali matndan rasm yaratadi (kalitsiz, bepul)
-
-O'rnatish:
-    pip install python-telegram-bot httpx
-
-Ishga tushirish:
-    1. @BotFather orqali bot yarating va tokenni oling
-    2. Pastda BOT_TOKEN o'rniga o'z tokeningizni qo'ying
-    3. python titan_image_bot.py
 """
 
+import os
+import threading
 import urllib.parse
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
 import httpx
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -24,10 +20,9 @@ from telegram.ext import (
 )
 
 # ==== SOZLAMALAR ====
-BOT_TOKEN = "672559993:AAFCa3Fej2Aq17_I9pZxJdBIh3l1ah8D5M"  # @BotFather'dan olingan token
+BOT_TOKEN = "8672559993:AAFCa3Fej2Aq17_I9pZxJdBIh3l1ah8D5M"
 POLLINATIONS_URL = "https://image.pollinations.ai/prompt"
 
-# Uslub tanlanganda promptga qo'shiladigan so'zlar
 STYLES = {
     "realistic": ("📷 Realistik", "highly detailed, photorealistic, 8k, sharp focus"),
     "anime": ("🎌 Anime", "anime style, studio ghibli, vibrant colors"),
@@ -35,7 +30,6 @@ STYLES = {
     "oil": ("🖼️ Moyli rasm", "oil painting, canvas texture, fine art"),
 }
 
-# Foydalanuvchining oxirgi tanlagan uslubi (xotirada, oddiy versiya)
 user_styles: dict[int, str] = {}
 
 
@@ -125,13 +119,30 @@ async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await waiting_msg.edit_text(f"❌ Xatolik: {e}")
 
 
+class _HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Titan AI bot ishlayapti")
+
+    def log_message(self, format, *args):
+        pass
+
+
+def _run_health_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), _HealthHandler)
+    server.serve_forever()
+
+
 def main():
+    threading.Thread(target=_run_health_server, daemon=True).start()
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("generate", generate_image))
     app.add_handler(CallbackQueryHandler(choose_style, pattern=r"^style:"))
-    # Oddiy matn yuborilsa ham (komandasiz) rasm generatsiya qilsin
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, generate_image))
 
     print("Bot ishga tushdi...")
