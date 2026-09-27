@@ -20,7 +20,7 @@ from telegram.ext import (
 )
 
 # ==== SOZLAMALAR ====
-BOT_TOKEN = "8672559993:AAFCa3Fej2Aq17_I9pZxJdBIh3l1ah8D5M"
+BOT_TOKEN = "8672559993:AAFCa3Fej2Aq17_I9pZxJdBIh3l1Yah8D5M"
 POLLINATIONS_URL = "https://image.pollinations.ai/prompt"
 
 STYLES = {
